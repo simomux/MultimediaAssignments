@@ -36,17 +36,26 @@ struct vector {
         }
     }
     // The result of an assignment is the address of the object that you have assigned
+    //vector &operator=(const vector &other) {
+    //    if (this == &other) {
+    //        return *this;
+    //    }
+    //    free(data_);
+    //    size_ = other.size_;
+    //    capacity_ = other.capacity_;
+    //    data_ = (int *)malloc(capacity_ * sizeof(int));
+    //    for (size_t i = 0; i < size_; ++i) {
+    //        data_[i] = other.data_[i];
+    //    }
+    //    return *this;
+    //}
     vector& operator=(const vector &other) {
-
-        // Manage self-assignments for vectors
-        if (this == &other) {
-            return *this;
+        if (capacity_ < other.size_) {
+            free(data_);
+            capacity_ = other.capacity_;
+            data_ = (int *)malloc(capacity_ * sizeof(int));
         }
-
-        free(data_);
         size_ = other.size_;
-        capacity_ = other.capacity_;
-        data_ = (int *)malloc(capacity_ * sizeof(int));
         for (size_t i = 0; i < size_; ++i) {
             data_[i] = other.data_[i];
         }
@@ -78,6 +87,20 @@ void print(FILE *f, const vector &v)
     for (size_t i = 0; i < v.size(); i++) {
         fprintf(f, "%d\n", v.at(i));
     }
+}
+
+vector read(FILE *f)
+{
+    if (f == NULL) {
+        return vector();
+    }
+
+    vector v;
+    int num;
+    while (fscanf(f, "%d", &num) == 1) {
+        v.push_back(num);
+    }
+    return v;
 }
 
 int main(int argc, char *argv[])
