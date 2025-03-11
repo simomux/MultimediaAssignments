@@ -99,12 +99,22 @@ struct vector {
         assert(index < size_);
         return data_[index];
     }
+    // T& operator[](const vector<T> *this, size_t index) {
+    const T& operator[](size_t index) const {
+        return data_[index];
+    }
+    // I can do this overloading since the implicit parameter is different
+    // When compiling code the compiler does name mangling of the functions basically adding an hashing with the parameters type after the function name so that the linker has 2 functions with different names if I'm overloading.
+    // T& operator[](vector<T> *this, size_t index) {
+    T& operator[](size_t index) {   // Overloaded version of [] for managing assignments
+        return data_[index];
+    }
 };
 
 void print(FILE *f, const vector<int> &v)
 {
     for (size_t i = 0; i < v.size(); i++) {
-        fprintf(f, "%d\n", v.at(i));
+        fprintf(f, "%d\n", v[i]);
     }
 }
 
