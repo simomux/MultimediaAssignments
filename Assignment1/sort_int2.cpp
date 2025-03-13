@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 #include <algorithm>
+#include <ranges>
 
 namespace mdp {
 
@@ -185,10 +186,10 @@ auto compare(int a, int b)
 // functor (or function object) for comparing with more complex criterias
 
 struct comparator {
-    // your state information
+    int origin_;
 
     auto operator()(int a, int b) const{
-        return a > b;
+        return (long long)abs(a - origin_) < (long long)abs(b - origin_);
     }
 };
 
@@ -227,12 +228,19 @@ int main(int argc, char *argv[])
     // I don't need to specify the namespace because ADL (Argument Dependant Lookup) finds it automatically
     // sort(numbers.begin(), numbers.end(), comparator());
 
+
+    long long origin = 2000000001;
+    // comparator comp{ origin };  // This sintax doesn't automatically cast data types (like int to double)
+    // sort(numbers.begin(), numbers.end(), comp);
+
     // Sort with lambda function
     sort(numbers.begin(), numbers.end(),
-        [](int a, int b){
-            return a > b;
+        // [] represents the context of the lambda function, also known as closure
+        [&](int a, int b){ // & automatically includes in the closure all the variables that are used in the lambda
+            return abs(a - origin) < abs(b - origin);
         }
     );
+
     print(output, numbers);
 
     fclose(output);
