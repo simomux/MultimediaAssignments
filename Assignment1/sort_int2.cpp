@@ -5,18 +5,7 @@
 #include <cassert>
 #include <utility>
 #include <vector>
-
-// Comparison function for qsort
-int compare(const void *a, const void *b) 
-{
-    if (*(int *)a < *(int *)b) {
-        return -1;
-    }
-    if (*(int *)a > *(int *)b) {
-        return 1;
-    }
-    return 0;
-}
+#include <algorithm>
 
 namespace mdp {
 
@@ -188,6 +177,21 @@ std::vector<int> read(FILE *f)
     return v;
 }
 
+auto compare(int a, int b)
+{
+    return a < b;
+}
+
+// functor (or function object) for comparing with more complex criterias
+
+struct comparator {
+    // your state information
+
+    auto operator()(int a, int b) const{
+        return a > b;
+    }
+};
+
 int main(int argc, char *argv[])
 {
     using std::vector;
@@ -213,8 +217,22 @@ int main(int argc, char *argv[])
     numbers = read(input);
     fclose(input);
 
-    qsort(numbers.data(), numbers.size(), sizeof(int), compare);
+    // qsort(numbers.data(), numbers.size(), sizeof(int), compare);
 
+    // std::sort(numbers.begin(), numbers.end());
+
+    // Default implementation requires an additional function for predicate (2 args implementation uses less)
+    // Sort uses quicksort for more than 32 elements or insertion sort if less
+
+    // I don't need to specify the namespace because ADL (Argument Dependant Lookup) finds it automatically
+    // sort(numbers.begin(), numbers.end(), comparator());
+
+    // Sort with lambda function
+    sort(numbers.begin(), numbers.end(),
+        [](int a, int b){
+            return a > b;
+        }
+    );
     print(output, numbers);
 
     fclose(output);
