@@ -1,14 +1,12 @@
-#define _CRT_SECURE_NO_WARNINGS
-#include <cstdio>
-#include <cstdlib>
-#include <cerrno>
-#include <cassert>
 #include <utility>
 #include <vector>
 #include <algorithm>
 #include <ranges>
 #include <fstream>
 #include <iostream>
+#include <iterator>
+#include <format>
+#include <print>
 
 namespace mdp {
 
@@ -106,7 +104,6 @@ namespace mdp {
             return size_;
         }
         const T& at(size_t index) const {
-            assert(index < size_);
             return data_[index];
         }
         // T& operator[](const vector<T> *this, size_t index) {
@@ -165,7 +162,7 @@ namespace mdp {
     }
 }*/
 
-std::vector<int> read(std::ifstream& is)
+/*std::vector<int> read(std::ifstream& is)
 {
     using std::vector;
 
@@ -175,7 +172,7 @@ std::vector<int> read(std::ifstream& is)
         v.push_back(num);
     }
     return v;
-}
+}*/
 
 /*auto compare(int a, int b)
 {
@@ -196,11 +193,19 @@ int main(int argc, char *argv[])
 {
     using std::vector;
     using std::ranges::sort;
+    using std::ranges::copy;
 
     if (argc != 3) {
         // fprintf(stderr, "Usage: %s <input file> <output file>\n", argv[0]);
         // '<<' operator returns the same ostream that is used in the left-hand side
-        std::cerr << "Usage: " << argv[0] << " <input file> <output file>\n";
+
+        // std::cerr << "Usage: " << argv[0] << " <input file> <output file>\n";
+
+        // Before C++ 23
+        // std::cerr << std::format("Usage : {} <input file> <output file", argv[0]);
+
+        // From C++ 23
+        std::println(std::cerr, "Usage : {} <input file> <output file", argv[0]);
         return 1;
     }
 
@@ -222,8 +227,45 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    vector<int> numbers;
-    numbers = read(input);
+
+    // Metodo craaazy per fare le read di numbers
+
+
+
+    /*
+    std::istream_iterator<int> start(input);
+    std::istream_iterator<int> stop;    // Default constructor represents the EOF
+    vector<int> numbers(start, stop);    // Simple but unsafe method
+
+    This might look better that the implementation above:
+
+    vector<int> numbers(
+        std::istream_iterator<int>(input),
+        std::istream_iterator<int>()
+    );
+
+    But this causes the "Most vexing parse" problem.
+    In this case numbers gets parsed from the compiler into a function.
+    To fix this you must use the following syntax:
+    */
+
+    vector<int> numbers{
+        std::istream_iterator<int>(input),
+        std::istream_iterator<int>()
+    };
+
+
+    /*std::copy(
+        start,
+        stop,
+        std::back_inserter(numbers)
+    );*/
+
+    /*std::copy(
+        std::istream_iterator<int>(input),
+        std::istream_iterator<int>(),
+        std::back_inserter(numbers)
+    );*/
 
     // qsort(numbers.data(), numbers.size(), sizeof(int), compare);
 
@@ -250,8 +292,8 @@ int main(int argc, char *argv[])
 
     sort(numbers);
 
-    for (const auto& it : numbers) {
-        output << it << "\n";
-    }
+    copy(numbers, std::ostream_iterator<int>(output, "\n"));
+    // copy(numbers, std::ostream_iterator<int>(std::cout, ", "));
+
     return 0;
 }
