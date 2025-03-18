@@ -7,6 +7,7 @@
 #include <iterator>
 #include <format>
 #include <print>
+#include <set>
 
 namespace mdp {
 
@@ -191,7 +192,6 @@ struct comparator {
 
 int main(int argc, char *argv[])
 {
-    using std::vector;
     using std::ranges::sort;
     using std::ranges::copy;
 
@@ -249,10 +249,13 @@ int main(int argc, char *argv[])
     To fix this you must use the following syntax:
     */
 
-    vector<int> numbers{
+    // Set in C++ are based on auto-balancing trees to sort automatically data
+    std::set<int> numbers{
         std::istream_iterator<int>(input),
         std::istream_iterator<int>()
     };
+
+    // If you want repetition you can use multiset
 
 
     /*std::copy(
@@ -290,7 +293,7 @@ int main(int argc, char *argv[])
         }
     );*/
 
-    sort(numbers);
+    // sort(numbers);
 
     copy(numbers, std::ostream_iterator<int>(output, "\n"));
     // copy(numbers, std::ostream_iterator<int>(std::cout, ", "));
