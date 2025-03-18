@@ -123,11 +123,11 @@ namespace mdp {
 
 }
 
-void print(std::ostream& os, const std::vector<int> &v)
+/*void print(std::ostream& os, const std::vector<int> &v)
 {
     /*for (size_t i = 0; i < v.size(); i++) {
         fprintf(f, "%d\n", v[i]);
-    }*/
+    }#1#
 
     // When iterators were trash
 
@@ -139,7 +139,7 @@ void print(std::ostream& os, const std::vector<int> &v)
         int x = *it;
         fprintf(f, "%d ", x);
         ++it;
-    }*/
+    }#1#
 
     // Post C++ 11 with the introduction of auto
 
@@ -151,19 +151,19 @@ void print(std::ostream& os, const std::vector<int> &v)
         const auto& x = *it;
         fprintf(f, "%d ", x);
         ++it;
-    }*/
+    }#1#
 
     // Some cursed ahh for loop
 
     /*for (auto it = v.begin(), stop = v.end(); it != stop; ++it) {
         const auto& x = *it;
         fprintf(f, "%d ", x);
-    }*/
+    }#1#
 
     for (const auto& it : v) {
         os << it << "\n";
     }
-}
+}*/
 
 std::vector<int> read(std::ifstream& is)
 {
@@ -195,6 +195,8 @@ struct comparator {
 int main(int argc, char *argv[])
 {
     using std::vector;
+    using std::ranges::sort;
+
     if (argc != 3) {
         // fprintf(stderr, "Usage: %s <input file> <output file>\n", argv[0]);
         // '<<' operator returns the same ostream that is used in the left-hand side
@@ -246,9 +248,10 @@ int main(int argc, char *argv[])
         }
     );*/
 
-    std::sort(numbers.begin(), numbers.end());
+    sort(numbers);
 
-    print(output, numbers);
-    print(std::cout, numbers);
+    for (const auto& it : numbers) {
+        output << it << "\n";
+    }
     return 0;
 }
