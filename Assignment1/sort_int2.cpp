@@ -7,6 +7,8 @@
 #include <vector>
 #include <algorithm>
 #include <ranges>
+#include <fstream>
+#include <iostream>
 
 namespace mdp {
 
@@ -121,7 +123,7 @@ namespace mdp {
 
 }
 
-void print(FILE *f, const std::vector<int> &v)
+void print(std::ostream& os, const std::vector<int> &v)
 {
     /*for (size_t i = 0; i < v.size(); i++) {
         fprintf(f, "%d\n", v[i]);
@@ -159,26 +161,23 @@ void print(FILE *f, const std::vector<int> &v)
     }*/
 
     for (const auto& it : v) {
-        fprintf(f, "%d\n", it);
+        os << it << "\n";
     }
 }
 
-std::vector<int> read(FILE *f)
+std::vector<int> read(std::ifstream& is)
 {
     using std::vector;
-    if (f == NULL) {
-        return vector<int>();
-    }
 
     vector<int> v;
     int num;
-    while (fscanf(f, "%d", &num) == 1) {
+    while (is >> num) {
         v.push_back(num);
     }
     return v;
 }
 
-auto compare(int a, int b)
+/*auto compare(int a, int b)
 {
     return a < b;
 }
@@ -191,32 +190,38 @@ struct comparator {
     auto operator()(int a, int b) const{
         return (long long)abs(a - origin_) < (long long)abs(b - origin_);
     }
-};
+};*/
 
 int main(int argc, char *argv[])
 {
     using std::vector;
     if (argc != 3) {
-        fprintf(stderr, "Usage: %s <input file> <output file>\n", argv[0]);
+        // fprintf(stderr, "Usage: %s <input file> <output file>\n", argv[0]);
+        // '<<' operator returns the same ostream that is used in the left-hand side
+        std::cerr << "Usage: " << argv[0] << " <input file> <output file>\n";
         return 1;
     }
 
-    FILE *input = fopen(argv[1], "r");
-    if (!input) {
-        perror("Error opening input file");
+    // FILE *input = fopen(argv[1], "r");
+
+    // Reading with 'r' mode utilize text mode automatically parses escape sequences
+    // If you utilize 'rb' mode (Read Bytes) you have to specify as 2nd argument 'std::ios::binary' to make sure that they aren't parsed
+    // Remember that in linux escape sequences are 1 Byte long so there is no difference, while in windows they are 2 Bytes long
+    std::ifstream input(argv[1]/*, std::ios::binary*/);
+    if (!input) {    // '!' operator calls 'fail()' method
+        std::cerr << "Error opening input file\n";
         return 1;
     }
 
-    FILE *output = fopen(argv[2], "w");
+    // FILE *output = fopen(argv[2], "w");
+    std::ofstream output(argv[2]/*, std::ios::binary*/);
     if (!output) {
-        perror("Error opening output file");
-        fclose(input);
+        std::cerr << "Error opening output file\n";
         return 1;
     }
 
     vector<int> numbers;
     numbers = read(input);
-    fclose(input);
 
     // qsort(numbers.data(), numbers.size(), sizeof(int), compare);
 
@@ -229,20 +234,21 @@ int main(int argc, char *argv[])
     // sort(numbers.begin(), numbers.end(), comparator());
 
 
-    long long origin = 2000000001;
+    // long long origin = 2000000001;
     // comparator comp{ origin };  // This sintax doesn't automatically cast data types (like int to double)
     // sort(numbers.begin(), numbers.end(), comp);
 
     // Sort with lambda function
-    sort(numbers.begin(), numbers.end(),
+    /*sort(numbers.begin(), numbers.end(),
         // [] represents the context of the lambda function, also known as closure
         [&](int a, int b){ // & automatically includes in the closure all the variables that are used in the lambda
             return abs(a - origin) < abs(b - origin);
         }
-    );
+    );*/
+
+    std::sort(numbers.begin(), numbers.end());
 
     print(output, numbers);
-
-    fclose(output);
+    print(std::cout, numbers);
     return 0;
 }
