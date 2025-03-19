@@ -1,7 +1,6 @@
 #include <iostream>
 #include <print>
 #include <fstream>
-#include <iterator>
 #include <map>
 
 int main(int argc, char *argv[])
@@ -35,4 +34,5 @@ int main(int argc, char *argv[])
     output << key << "\t" << value << "\n";
   }
 
+  return 0;
 }
