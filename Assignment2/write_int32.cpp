@@ -12,8 +12,7 @@ The first parameter is the name of a text file that contains signed base 10 inte
 template<typename T>
 std::ostream& raw_write(std::ostream& output, const T& val, const size_t size = sizeof(val))
 {
-  output.write(reinterpret_cast<const char*>(&val), size);
-  return output;
+  return output.write(reinterpret_cast<const char*>(&val), size);
 };
 
 int main(int argc, char* argv[]) {
