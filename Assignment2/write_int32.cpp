@@ -9,6 +9,13 @@ The first parameter is the name of a text file that contains signed base 10 inte
 #include <vector>
 #include <iterator>
 
+template<typename T>
+std::ostream& raw_write(std::ostream& output, const T& val, const size_t size = sizeof(val))
+{
+  output.write(reinterpret_cast<const char*>(&val), size);
+  return output;
+};
+
 int main(int argc, char* argv[]) {
 
   if (argc != 3) {
@@ -31,12 +38,40 @@ int main(int argc, char* argv[]) {
   }
 
   std::vector<int32_t> numbers{
-    std::istream_iterator<int>(input),
-    std::istream_iterator<int>()
+    std::istream_iterator<int32_t>(input),
+    std::istream_iterator<int32_t>()
   };
 
-  for (auto& it : numbers) {
-    output << -it << std::endl;
+  // Manual version (machine independent)
+  /*for (const auto& it : numbers) {
+    output.put((it >> 0) & 0xFF);
+    output.put((it >> 8) & 0xFF);
+    output.put((it >> 16) & 0xFF);
+    output.put((it >> 24) & 0xFF);
+  }*/
+
+
+  // Machine dependant version (different for little endian and big endian)
+
+  /* 1st version
+   * for (const int32_t& it : numbers) {
+      const int32_t* p = &it;
+      const char* c = reinterpret_cast<const char*>(p);
+      output.write(c, 4);
+    }
+   */
+
+
+  /* 2n version
+   *for (const int32_t& it : numbers) {
+    output.write(reinterpret_cast<const char*>(&it), 4);
+  }*/
+
+  // 3rd version
+  // output.write(reinterpret_cast<const char*>(numbers.data()), numbers.size() * sizeof(int32_t));
+
+  for (const auto& number : numbers) {
+    raw_write(output, number);
   }
 
   return 0;
