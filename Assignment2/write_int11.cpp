@@ -43,7 +43,7 @@ public:
     }
 
     // Write the n least significant bits of u from MSB to LSB
-    std::ostream& write(uint32_t u, size_t n) {
+    std::ostream& operator()(uint32_t u, size_t n) {
         while (n --> 0) {
             writebit(u >> n);
         }
