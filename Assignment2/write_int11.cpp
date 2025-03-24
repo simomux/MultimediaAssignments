@@ -19,26 +19,65 @@ std::ostream& raw_write(std::ostream& output, const T& val, const size_t size = 
 
 // SOLUTION: fill bit-by-bit an 8 bit buffer and write to file when all the char in the byte have been inserted
 
+class bitwriter {
+    std::ostream& os_;
+    uint8_t buffer_ = 0;
+    size_t n_ = 0;
+
+    void writebit(uint32_t bit) {
+        buffer_ = (buffer_ << 1) | (bit & 1);
+        ++n_;
+        if (n_ == 8) {
+            raw_write(os_, buffer_);
+            n_ = 0;
+        }
+    }
+
+public:
+    // Things are initialized with the same order of how they are declared in the struct, so we maintain the same order in the constructor
+    bitwriter(std::ostream& os) : os_(os) {}
+    // Initializing the ostream in the constructor list
+
+    ~bitwriter() {
+        flush();
+    }
+
+    // Write the n least significant bits of u from MSB to LSB
+    std::ostream& write(uint32_t u, size_t n) {
+        while (n --> 0) {
+            writebit(u >> n);
+        }
+        return os_;
+    }
+
+    std::ostream& flush(uint32_t bit = 0) {
+        while (n_ > 0) {
+            writebit(bit);
+        }
+        return os_;
+    }
+};
+
 int main(int argc, char* argv[]) {
     using std::ranges::copy;
 
     if (argc != 3) {
         std::println(std::cerr, "Usage: {} filein.txt fileout.bin", argv[0]);
-        return 1;
+        return EXIT_FAILURE;
     }
 
     std::ifstream input(argv[1]);
 
     if (!input) {
         std::println(std::cerr, "Error opening input file");
-        return 1;
+        return EXIT_FAILURE;
     }
 
     std::ofstream output(argv[2], std::ios::binary);
 
     if (!output) {
         std::println(std::cerr, "Error opening output file");
-        return 1;
+        return EXIT_FAILURE;
     }
 
     // No check if the value is greater than 11 bits??
@@ -47,45 +86,13 @@ int main(int argc, char* argv[]) {
     std::istream_iterator<int>()
     };
 
-    std::queue<bool> buffer {};
-
-    size_t size = 11;
+    // We don't risk on writing on a closed file with flush in the destructor because output is declared before bw, so it will be destroyed later (C++ destroys variable on reverse order from when they're declared)
+    bitwriter bw(output);
 
     for (const auto& number : numbers) {
-        // Castare il numero in binario a 11 bit
-        uint16_t twos_complement;
-        if (number < 0) {
-            twos_complement = (1 << 11) + number; // Complemento a due per i numeri negativi
-        } else {
-            twos_complement = static_cast<uint16_t>(number); // Per numeri positivi
-        }
-
-        // Aggiungere i bit nel buffer (dal MSB al LSB)
-        for (int i = 10; i >= 0; --i) {
-            buffer.push((twos_complement >> i) & 1);
-        }
-
-        // Se la coda ha 8 bit scrivila su file
-        while (buffer.size() >= 8) {
-            char result = 0;
-            for (int i = 0; i < 8; ++i) {
-                result |= (buffer.front() << (7 - i));
-                buffer.pop();
-            }
-            raw_write(output, result, 1);
-        }
+        bw.write(number, 11);
     }
 
-    // Se ci sono dei bit rimanenti (meno di 8), completare con 0
-    if (!buffer.empty()) {
-        char result = 0;
-        int remaining_bits = buffer.size();
-        for (int i = 0; i < remaining_bits; ++i) {
-            result |= (buffer.front() << (7 - i));
-            buffer.pop();
-        }
-        raw_write(output, result, 1); // Scriviamo l'ultimo byte
-    }
 
-    return 0;
+    return EXIT_SUCCESS;
 }
