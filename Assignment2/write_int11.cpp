@@ -90,7 +90,7 @@ int main(int argc, char* argv[]) {
     bitwriter bw(output);
 
     for (const auto& number : numbers) {
-        bw.write(number, 11);
+        bw(number, 11);
     }
 
 
