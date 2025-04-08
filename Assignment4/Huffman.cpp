@@ -114,6 +114,19 @@ struct node {
 
 };
 
+template<typename T>
+void make_codes(node<T>* n, uint32_t code, uint32_t len, std::unordered_map<T, node<T>*>& map)
+{
+    if (n->left_ == nullptr) {
+        n->code_ = code;
+        n->len_ = len;
+        map[n->sym_] = n;
+    } else {
+        make_codes(n->left_, code << 1, len+1, map);
+        make_codes(n->right_, (code << 1) | 1, len+1, map);
+    }
+}
+
 void compress(const std::string &infile, const std::string &outfile)
 {
     std::ifstream is(infile);
@@ -145,8 +158,7 @@ void compress(const std::string &infile, const std::string &outfile)
 
     // Tuple unpacking
     for (const auto& [sym, freq] : f.counter_) {
-        std::println("{}: {}", sym, freq);
-        auto n = new node(sym, freq);
+        node<uint8_t>* n = new node<uint8_t>(sym, freq);
         nodes.push_back(n);
     }
 
@@ -170,6 +182,17 @@ void compress(const std::string &infile, const std::string &outfile)
         nodes.insert(it, n);
     }
 
+    auto root = nodes.back();
+    nodes.pop_back();
+
+
+    std::unordered_map<uint8_t, node<uint8_t>* > map;
+    make_codes(root, 0, 0, map);
+
+    for (const auto& [sym, n] : map) {
+        std::println("{:c} {:0{}b}", sym, n->code_, n->len_);
+    }
+
     std::ofstream os(outfile, std::ios::binary);
 
     if (!os) {
@@ -177,7 +200,19 @@ void compress(const std::string &infile, const std::string &outfile)
         exit(EXIT_FAILURE);
     }
 
+    os << "HUFFMAN1";
+    os.put(map.size());
     bitwriter bw(os);
+    for (const auto& [sym, n] : map) {
+        bw(sym, 8);
+        bw(n->len_, 5);
+        bw(n->code_, n->len_);
+    }
+    bw(v.size(), 32);
+    for (const auto& x : v) {
+        auto n = map[x];
+        bw(n->code_, n->len_);
+    }
 }
 
 void decompress(const std::string &infile, const std::string &outfile)
@@ -189,30 +224,68 @@ void decompress(const std::string &infile, const std::string &outfile)
         exit(EXIT_FAILURE);
     }
 
-    std::ofstream os(outfile);
+    std::string header(8, ' ');
+    is.read(header.data(), 8);
+    size_t table_len = is.get();
+
+    if (table_len == 0) {
+        table_len = 256;
+    }
+
+    // typedef std::tuple<uint8_t, uint32_t, uint32_t> table_entry;
+    using table_entry = std::tuple<uint8_t, uint32_t, uint32_t>;    // sym, code, len
+    std::vector<table_entry> table;
+
+    bitreader br(is);
+
+    for (size_t i = 0; i < table_len; i++) {
+        table_entry entry;
+        uint32_t sym, code, len;
+        br(sym, 8);
+        br(len, 5);
+        br(code, len);
+
+        table.emplace_back(sym, code, len);
+    }
+
+    uint32_t n;
+    br(n, 32);
+
+    sort(table.begin(), table.end(),
+        [](const table_entry& a, const table_entry& b) {
+            return get<2>(a) < get<2>(b);
+        });
+
+    std::ofstream os(outfile, std::ios::binary);
 
     if (!os) {
         std::println(std::cerr, "Error opening output file!");
         exit(EXIT_FAILURE);
     }
 
-    bitreader br(is);
-
-    while (true) {
-        int nbits = 0;
-        uint32_t u;
-
-        while (br(u, 1)) {
-            if (u == 1) {
+    for (uint32_t i = 0; i < n; i++) {
+        size_t pos;
+        uint32_t code = 0;
+        uint32_t len = 0;
+        bool found = false;
+        for (pos = 0; pos < table_len; pos++) {
+            while (len < get<2>(table[pos])) {
+                uint32_t bit;
+                br(bit, 1);
+                code = (code << 1) | bit;
+                ++len;
+            }
+            if (code == get<1>(table[pos])) {
+                found = true;
                 break;
             }
-            ++nbits;
-            if (!is) {
-                break;
-            }
+            ++pos;
         }
-        br(u, nbits);
-        uint32_t val = (1<<nbits) | u;
+
+        if (!found) {
+            exit(EXIT_FAILURE);
+        }
+        os.put(get<>());
     }
 }
 
