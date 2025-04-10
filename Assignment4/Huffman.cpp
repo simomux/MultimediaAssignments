@@ -8,6 +8,7 @@
 #include <map>
 #include <unordered_map>
 #include <algorithm>
+#include <queue>
 
 template <typename T>
 std::istream& raw_read(std::istream& input, T& val, const size_t size = sizeof(T))
@@ -152,38 +153,32 @@ void compress(const std::string &infile, const std::string &outfile)
     }*/
 
     // Same thing as above, just more fancy
-    auto f = std::for_each(begin(v), end(v), frequency<uint32_t>{});
+    auto f = for_each(begin(v), end(v), frequency<uint8_t>{});
 
-    std::vector<node<uint8_t>*> nodes;
-
-    // Tuple unpacking
-    for (const auto& [sym, freq] : f.counter_) {
-        node<uint8_t>* n = new node<uint8_t>(sym, freq);
-        nodes.push_back(n);
-    }
-
-    auto pred = [](node<uint8_t>* a, node<uint8_t>* b) {
+    using nodeptr = node<uint8_t>*;
+    auto pred = [](const nodeptr a, const nodeptr b) {
         return a->freq_ > b->freq_;
     };
 
-    sort(nodes.begin(), nodes.end(), pred);
+    std::priority_queue<nodeptr, std::vector<nodeptr>, decltype(pred)> nodes(pred);
 
-    while (nodes.size() > 1) {
-        auto n1 = nodes.back();
-        nodes.pop_back();
-        auto n2 = nodes.back();
-        nodes.pop_back();
-        auto n = new node(n1, n2);
-
-
-        // Binary search on random access ordered sequences
-        auto it = std::lower_bound(nodes.begin(), nodes.end(), n, pred);
-
-        nodes.insert(it, n);
+    // Tuple unpacking
+    for (const auto& [sym, freq] : f.counter_) {
+        auto n = new node(sym, freq);
+        nodes.push(n);
     }
 
-    auto root = nodes.back();
-    nodes.pop_back();
+    while (nodes.size() > 1) {
+        auto n1 = nodes.top();
+        nodes.pop();
+        auto n2 = nodes.top();
+        nodes.pop();
+        auto n = new node(n1, n2);
+        nodes.push(n);
+    }
+
+    auto root = nodes.top();
+    nodes.pop();
 
 
     std::unordered_map<uint8_t, node<uint8_t>* > map;
@@ -201,14 +196,15 @@ void compress(const std::string &infile, const std::string &outfile)
     }
 
     os << "HUFFMAN1";
-    os.put(map.size());
+    uint8_t table_size = static_cast<uint8_t>(map.size());
+    os.put(table_size);
     bitwriter bw(os);
     for (const auto& [sym, n] : map) {
         bw(sym, 8);
         bw(n->len_, 5);
         bw(n->code_, n->len_);
     }
-    bw(v.size(), 32);
+    bw(static_cast<uint32_t>(v.size()), 32);
     for (const auto& x : v) {
         auto n = map[x];
         bw(n->code_, n->len_);
@@ -239,7 +235,6 @@ void decompress(const std::string &infile, const std::string &outfile)
     bitreader br(is);
 
     for (size_t i = 0; i < table_len; i++) {
-        table_entry entry;
         uint32_t sym, code, len;
         br(sym, 8);
         br(len, 5);
@@ -283,9 +278,10 @@ void decompress(const std::string &infile, const std::string &outfile)
         }
 
         if (!found) {
+            std::println(std::cerr, "Symbol not found!");
             exit(EXIT_FAILURE);
         }
-        os.put(get<>());
+		os.put(get<0>(table[pos]));
     }
 }
 
